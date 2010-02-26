@@ -99,8 +99,10 @@
 (define-key taskpaper-mode-map (kbd "M-RET") 'taskpaper-newline-and-electric-mark)
 (define-key taskpaper-mode-map (kbd "M-<up>") 'taskpaper-priority-increase)
 (define-key taskpaper-mode-map (kbd "M-<down>") 'taskpaper-priority-decrease)
-(define-key taskpaper-mode-map (kbd "C-M-T") 'taskpaper-list-today)
 
+
+(define-key taskpaper-mode-map "\C-c\C-f" 'taskpaper-focus-on-current-project)
+(define-key taskpaper-mode-map "\C-c\C-t" 'taskpaper-focus-on-today)
 
 ;; Face
 (defface taskpaper-project-face
@@ -278,14 +280,10 @@
 	(taskpaper-indent-line)
 	(insert "- ")))
 
-
-
-
-(defun taskpaper-list-today ()
+(defun taskpaper-focus-on-today ()
   "List all tasks tagged with @today in a new (read-only) buffer."
   (interactive)
   (taskpaper-focus-on-tag "@today"))
-
 
 (defun taskpaper-focus-on-tag (tag)
   "List all tasks tagged with tag in a new (read-only) buffer."
@@ -330,9 +328,7 @@
 		;; if it's the first task for this project... add the project name
 		(when (not current-project-has-tasks)
 		  (setq current-project-has-tasks t)
-		  (insert "\n")
-		  (insert current-project)
-		  (insert ":\n"))
+		  (insert (format "\n%s:\n" current-project)))
 
 		;; inser the final task
 		(insert current-task))
@@ -348,6 +344,76 @@
 	(setq buffer-read-only t)
 	;; use this mode
 	(taskpaper-mode)))
+
+
+(defun taskpaper-focus-on-current-project ()
+  "Limit the view to only the current project."
+  (interactive)
+
+  (save-excursion
+
+	(setq this-buffer (current-buffer))
+
+	(setq current-project nil)
+	(setq moving t)
+	(while moving 
+	  
+	  (when (looking-at "^\\(.+\\):[ \t]+*$") 
+		(setq current-project (buffer-substring-no-properties (match-beginning 1) (match-end 1)))
+		(message (format "Found project %s" current-project))
+		(setq moving nil))
+
+	  ;; if we're still moving
+	  (when moving
+		;; go back one line
+		(when (< 0 (forward-line -1))
+		  (setq moving nil))))
+
+
+	;; if we have a current project...
+	(when current-project
+
+	  ;; setup the new buffer
+	  (message (format "Focusing on %s" current-project))
+	  (setq taskpaper-focus-buffer (format "* Taskpaper Project Focus: %s *" current-project))
+	  
+	  (if (get-buffer taskpaper-focus-buffer)
+		  (kill-buffer taskpaper-focus-buffer))
+	  (get-buffer-create taskpaper-focus-buffer)
+
+
+	  (forward-line) ;; move one step (we're on the project line aleady)
+
+	  (set-buffer taskpaper-focus-buffer)
+	  (insert (format "%s:\n\n" current-project))
+
+	  ;; loop through the thing
+
+	  (setq moving t)
+
+	  (while moving
+		
+		;; unless we're looking at another project, add it to the buffer
+		(if (looking-at "^\\(.+\\):[ \t]+*$")
+			(setq moving nil)
+		  (setq line (thing-at-point 'line))
+		  (set-buffer taskpaper-focus-buffer)
+		  (insert line))
+		
+		;; keep going?
+		(set-buffer this-buffer)
+		(when moving
+		  (when (< 0 (forward-line))
+			(setq moving nil))))
+
+	  ;; switch to the new buffer
+	  (switch-to-buffer taskpaper-focus-buffer)
+	  ;; mark it as read only... we don't save from here
+	  (setq buffer-read-only t)
+	  (goto-char 0)
+	  (forward-line)
+	  ;; use this mode
+	  (taskpaper-mode))))
 
 
 (defun taskpaper-priority-increase ()
