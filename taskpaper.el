@@ -279,10 +279,20 @@
 	(insert "- ")))
 
 
+
+
 (defun taskpaper-list-today ()
   "List all tasks tagged with @today in a new (read-only) buffer."
   (interactive)
-  (setq taskpaper-list-today "*Taskpaper Today*")
+  (taskpaper-focus-on-tag "@today"))
+
+
+(defun taskpaper-focus-on-tag (tag)
+  "List all tasks tagged with tag in a new (read-only) buffer."
+  (interactive)
+  (message (format "Focusing on %s" tag))
+
+  (setq taskpaper-list-today (format "* Taskpaper Focus: %s *" tag))
   
   (save-excursion
 	;; go to the beginning of the buffer
@@ -301,13 +311,16 @@
 
 	;; probably not the best way to loop through the contents of a buffer...
 	(setq moving t)
+
+	(setq tag-regexp (format "^.*%s.*" tag))
+
 	(while moving 
-	  
+
 	  (when (looking-at "^\\(.+\\):[ \t]+*$") 
 		(setq current-project (buffer-substring-no-properties (match-beginning 1) (match-end 1)))
 		(setq current-project-has-tasks nil))
 	  
-	  (when (looking-at "^.*@today.*") 
+	  (when (looking-at tag-regexp) 
 		;; set the current task
 		(setq current-task (thing-at-point 'line))
 
@@ -336,7 +349,7 @@
 	;; use this mode
 	(taskpaper-mode)))
 
-	  
+
 (defun taskpaper-priority-increase ()
   "increase the priority by one"
   (interactive)
