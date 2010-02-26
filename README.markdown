@@ -12,7 +12,8 @@ The URL for this (fork of this) project: [http://github.com/tedroden/taskpaper-e
  - Focus on a single project or tag
  - List of key commands:
 
-`(define-key taskpaper-mode-map "\C-c\C-p" 'taskpaper-create-new-project)
+<pre>
+(define-key taskpaper-mode-map "\C-c\C-p" 'taskpaper-create-new-project)
 (define-key taskpaper-mode-map "\C-c\C-t" 'taskpaper-create-new-task)
 (define-key taskpaper-mode-map "\C-c\C-d" 'taskpaper-toggle-task)
 (define-key taskpaper-mode-map "-"        'taskpaper-electric-mark)
@@ -21,7 +22,8 @@ The URL for this (fork of this) project: [http://github.com/tedroden/taskpaper-e
 (define-key taskpaper-mode-map (kbd "M-<down>") 'taskpaper-priority-decrease)
 
 (define-key taskpaper-mode-map "\C-c\C-f" 'taskpaper-focus-on-current-project)
-(define-key taskpaper-mode-map "\C-c\C-t" 'taskpaper-focus-on-today)`
+(define-key taskpaper-mode-map "\C-c\C-t" 'taskpaper-focus-on-today)
+</pre>
 
 # Authors
 
