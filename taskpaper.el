@@ -94,7 +94,6 @@
 (define-key taskpaper-mode-map "\C-c\C-p" 'taskpaper-create-new-project)
 (define-key taskpaper-mode-map "\C-c\C-t" 'taskpaper-create-new-task)
 (define-key taskpaper-mode-map "\C-c\C-d" 'taskpaper-toggle-task)
-(define-key taskpaper-mode-map "+"        'taskpaper-electric-mark)
 (define-key taskpaper-mode-map "-"        'taskpaper-electric-mark)
 (define-key taskpaper-mode-map (kbd "M-RET") 'taskpaper-newline-and-electric-mark)
 (define-key taskpaper-mode-map (kbd "M-<up>") 'taskpaper-priority-increase)
