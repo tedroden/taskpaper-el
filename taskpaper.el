@@ -1,13 +1,17 @@
 ;;; taskpaper.el --- Taskpaper implementation for Emacs
 
-;; Copyright (C) 2008 Kentaro Kuribayashi
-;; Copyright (C) 2010 Ted Roden
+;; Copyright (C) 2008 Kentaro Kuribayashi (original)
+;; Copyright (c) 2010 Jonas Oberschweiber <jonas@oberschweiber.com> (updates)
+;; Copyright (C) 2010 Ted Roden (updates)
+
 
 ;; Author: kentaro <kentarok@gmail.com>
+;; Author: Jonas Oberschweiber <jonas@oberschweiber.com>
 ;; Author: Ted Roden <tedroden@gmail.com>
+
 ;; Keywords: tools, task
 
-;; Modified Feb 2010 by Jonas Oberschweiber <jonas@oberschweiber.com>
+
 ;; Changed handling of "done" tasks: uses TaskPaper's @done notation
 ;; instead of +/- at the beginning of the line
 ;; Changed the indentation function to automatically indent tasks that
@@ -68,10 +72,12 @@
 ;;
 ;;   `C-c C-d' on the task you have done.
 ;;
-
-;;; TODO:
-
-;;   + Norrowing by project and tag with simple interaction
+;; (4) Misc:
+;;
+;;   `M-<up>' increase the priority of a task
+;;   `M-<down>' decrease the priority of a task
+;;   `M-RET' create a new task from anywhere on the line
+;;   `C-M-T' View a list of tasks tagged with "@today" in a new buffer `taskpaper-list-today`
 
 ;;; Code:
 
@@ -93,6 +99,7 @@
 (define-key taskpaper-mode-map (kbd "M-RET") 'taskpaper-newline-and-electric-mark)
 (define-key taskpaper-mode-map (kbd "M-<up>") 'taskpaper-priority-increase)
 (define-key taskpaper-mode-map (kbd "M-<down>") 'taskpaper-priority-decrease)
+(define-key taskpaper-mode-map (kbd "C-M-T") 'taskpaper-list-today)
 
 
 ;; Face
@@ -112,16 +119,16 @@
 
 (defface taskpaper-task-marked-as-done-face
   '((((class color) (background light))
-     (:foreground "grey12" :weight light :strike-through t))
+     (:foreground "grey14" :weight light :strike-through t))
     (((class color) (background dark))
-     (:foreground "grey12" :weight light :strike-through t)))
+     (:foreground "grey14" :weight light :strike-through t)))
   "Face definition for task marked as done")
 
 (defface taskpaper-done-mark-face
   '((((class color) (background light))
-     (:foreground "grey12"))
+     (:foreground "grey14"))
     (((class color) (background dark))
-     (:foreground "grey12")))
+     (:foreground "grey14")))
   "Face definition for done mark")
 
 (defface taskpaper-undone-mark-face
@@ -177,17 +184,16 @@
      (1 taskpaper-undone-mark-face t)
      (2 taskpaper-task-face t))
 
-    ("^[ \t]*\\(-\\)\\(.+\\)@done.*$"
-     (0 taskpaper-done-mark-face t)
-     (2 taskpaper-task-marked-as-done-face t))
-
-
 	(".+@today.*" 0 taskpaper-task-today-face t)
 
 	("^.+@priority\(1\)$" 0 taskpaper-task-priority-1-face t)
 	("^.+@priority\(2\)$" 0 taskpaper-task-priority-2-face t)
-	("^.+@priority\(3\)$" 0 taskpaper-task-priority-3-face t)))
+	("^.+@priority\(3\)$" 0 taskpaper-task-priority-3-face t)
 
+	;; if it's done, it's done... make sure we display it as done
+    ("^[ \t]*\\(-\\)\\(.+\\)@done.*$"
+     (0 taskpaper-done-mark-face)
+     (2 taskpaper-task-marked-as-done-face))))
 
 ;; Taskpaper major mode
 (define-derived-mode taskpaper-mode fundamental-mode "Taskpaper"
@@ -202,10 +208,8 @@
   (set (make-local-variable 'indent-line-function) 'taskpaper-indent-line)
   (run-hooks 'taskpaper-mode-hook))
 
+;; start up when we see these files
 (add-to-list 'auto-mode-alist (cons "\\.taskpaper$" 'taskpaper-mode))
-;;(setq       font-lock-string-face nil)
-
-
 
 ;; Commands
 (defun taskpaper-create-new-project (name)
@@ -217,7 +221,6 @@
   "Creates new task"
   (interactive "sNew Task: ")
   (insert (concat "- " task)))
-
 
 (defun taskpaper-toggle-task ()
   "Marks task as done"
@@ -256,6 +259,15 @@
         (insert " "))
     (self-insert-command arg)))
 
+(defun tedroden/trim-line ()
+  (interactive)
+  (save-excursion 
+	(end-of-line)
+	(setq eol (point))
+	(while (= ?  (char-before ))
+	  (backward-char))
+	(delete-region eol (point))))
+
 
 (defun taskpaper-newline-and-electric-mark ()
   "Newline and new task"
@@ -267,7 +279,64 @@
 	(insert "- ")))
 
 
+(defun taskpaper-list-today ()
+  "List all tasks tagged with @today in a new (read-only) buffer."
+  (interactive)
+  (setq taskpaper-list-today "*Taskpaper Today*")
+  
+  (save-excursion
+	;; go to the beginning of the buffer
+	(goto-char 0)
 
+	;; FIXME: probably a rough way to get a blank buffer
+	;; if we already have this buffer, kill it and try again
+	(if (get-buffer taskpaper-list-today)
+		(kill-buffer taskpaper-list-today))
+	(get-buffer-create taskpaper-list-today)
+	
+	;; set up some basic variables
+	(setq current-project "")
+	(setq current-project-has-tasks nil)
+	(setq this-buffer (current-buffer))
+
+	;; probably not the best way to loop through the contents of a buffer...
+	(setq moving t)
+	(while moving 
+	  
+	  (when (looking-at "^\\(.+\\):[ \t]+*$") 
+		(setq current-project (buffer-substring-no-properties (match-beginning 1) (match-end 1)))
+		(setq current-project-has-tasks nil))
+	  
+	  (when (looking-at "^.*@today.*") 
+		;; set the current task
+		(setq current-task (thing-at-point 'line))
+
+		;; write the task/project into the new buffer
+		(set-buffer taskpaper-list-today)
+
+		;; if it's the first task for this project... add the project name
+		(when (not current-project-has-tasks)
+		  (setq current-project-has-tasks t)
+		  (insert "\n")
+		  (insert current-project)
+		  (insert ":\n"))
+
+		;; inser the final task
+		(insert current-task))
+
+	  ;; ensure that we go forward in the proper buffer
+	  (set-buffer this-buffer)
+	  (when (< 0 (forward-line))
+		(setq moving nil)))
+
+	;; switch to the new buffer
+	(switch-to-buffer taskpaper-list-today)
+	;; mark it as read only... we don't save from here
+	(setq buffer-read-only t)
+	;; use this mode
+	(taskpaper-mode)))
+
+	  
 (defun taskpaper-priority-increase ()
   "increase the priority by one"
   (interactive)
@@ -287,8 +356,7 @@
 	  (beginning-of-line)
 
 	  ;; is there a priority already defined
-	  (if (looking-at ".*\\(@priority(\\([0-9]\\))\\).*")
-
+	  (if (looking-at ".*\\( ?@priority(\\([0-9]\\))\\).*")
 
 		  ;; cache the current-priority
 		  (let ((current-priority (string-to-number 
@@ -300,7 +368,7 @@
 
 			;; if the priority goes to zero, remove it all together
 			(if (> 1 new-priority)
-				(delete-region (- 1 (match-beginning 1)) (match-end 1))
+				(delete-region (match-beginning 1) (match-end 1))
 
 			  ;; otherwise, delete the current-priority
 			  (delete-region (match-beginning 2) (match-end 2))
@@ -314,12 +382,31 @@
 		;; otherwise, if we're increasing append a basic priority
 		(message (number-to-string number))
 		(if (< number 0)
+			;; nothing to see here.
 			(message "No priority to decrease")
-		  
-		  (end-of-line)
+
+		  ;; create a default priority
+		  (tedroden/trim-line)
+		  (end-of-line) 
 		  (insert " @priority(1)"))))))
 
 
+(defun taskpaper-toggle-today ()
+  "Tag this task with @today"
+  (interactive)
+  (save-excursion
+	;; get to the start of the line
+	(beginning-of-line)
 
+	;; already tagged?
+	(if (looking-at ".*\\( ?@today\\).*")
+		;; delete the @today tag
+		(delete-region (match-beginning 1) (match-end 1))
+
+	  (tedroden/trim-line)
+	  (end-of-line)
+	  
+	  (insert " @today"))))
+		  
 (provide 'taskpaper)
 ;;; taskpaper.el ends here
