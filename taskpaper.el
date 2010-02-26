@@ -112,23 +112,23 @@
 
 (defface taskpaper-task-face
   '((((class color) (background light))
-     (:foreground "wheat4"))
+     (:foreground "wheat1"))
     (((class color) (background dark))
-     (:foreground "wheat4")))
+     (:foreground "wheat1")))
   "Face definition for task")
 
 (defface taskpaper-task-marked-as-done-face
   '((((class color) (background light))
-     (:foreground "grey14" :weight light :strike-through t))
+     (:foreground "grey20" :weight light :strike-through t))
     (((class color) (background dark))
-     (:foreground "grey14" :weight light :strike-through t)))
+     (:foreground "grey20" :weight light :strike-through t)))
   "Face definition for task marked as done")
 
 (defface taskpaper-done-mark-face
   '((((class color) (background light))
-     (:foreground "grey14"))
+     (:foreground "grey20"))
     (((class color) (background dark))
-     (:foreground "grey14")))
+     (:foreground "grey20")))
   "Face definition for done mark")
 
 (defface taskpaper-undone-mark-face
@@ -192,8 +192,8 @@
 
 	;; if it's done, it's done... make sure we display it as done
     ("^[ \t]*\\(-\\)\\(.+\\)@done.*$"
-     (0 taskpaper-done-mark-face)
-     (2 taskpaper-task-marked-as-done-face))))
+     (0 taskpaper-done-mark-face t)
+     (2 taskpaper-task-marked-as-done-face t))))
 
 ;; Taskpaper major mode
 (define-derived-mode taskpaper-mode fundamental-mode "Taskpaper"
