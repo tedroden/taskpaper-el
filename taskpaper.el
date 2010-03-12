@@ -355,6 +355,8 @@
 
 	(setq current-project nil)
 	(setq moving t)
+
+	;; crawl back to project line
 	(while moving 
 	  
 	  (when (looking-at "^\\(.+\\):[ \t]+*$") 
@@ -362,7 +364,7 @@
 		(message (format "Found project %s" current-project))
 		(setq moving nil))
 
-	  ;; if we're still moving
+	  ;; if we should still be moving
 	  (when moving
 		;; go back one line
 		(when (< 0 (forward-line -1))
@@ -380,12 +382,10 @@
 		  (kill-buffer taskpaper-focus-buffer))
 	  (get-buffer-create taskpaper-focus-buffer)
 
-
 	  (forward-line) ;; move one step (we're on the project line aleady)
-
 	  (set-buffer taskpaper-focus-buffer)
-	  (insert (format "%s:\n\n" current-project))
-
+	  (insert (format "%s:\n" current-project))
+	  (set-buffer this-buffer)
 	  ;; loop through the thing
 
 	  (setq moving t)
