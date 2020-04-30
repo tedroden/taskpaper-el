@@ -29,4 +29,4 @@ The URL for this (fork of this) project: [http://github.com/tedroden/taskpaper-e
 
 This was originally written by [Kentaro Kuribayashi](http://coderepos.org/share/browser/lang/elisp/taskpaper/trunk/taskpaper.el) in 2008.
 
-Modified in 2010 by [Jonas Oberschweiber](http://github.com/jonasoberschweiber/taskpaper-el) and then me, [Ted Roden](http://tedroden.com).
+Modified in 2010 by [Jonas Oberschweiber](http://github.com/jonasoberschweiber/taskpaper-el) and then me, [Ted Roden](https://twitter.com/tedroden).
